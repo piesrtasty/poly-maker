@@ -1,6 +1,7 @@
 import math 
 from poly_data.data_utils import update_positions
 import poly_data.global_state as global_state
+import poly_data.CONSTANTS as CONSTANTS
 
 # def get_avgPrice(position, assetId):
 #     curr_global = global_state.all_positions[global_state.all_positions['asset'] == str(assetId)]
@@ -114,7 +115,7 @@ def get_order_prices(best_bid, best_bid_size, top_bid,  best_ask, best_ask_size,
     if best_bid_size < row['min_size'] * 1.5:
         bid_price = best_bid
     
-    if best_ask_size < 250 * 1.5:
+    if best_ask_size < CONSTANTS.LIQUIDITY_THRESHOLD * 1.5:
         ask_price = best_ask
     
 
