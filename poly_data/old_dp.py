@@ -19,9 +19,7 @@ def process_book_data(asset, json_data):
     global_state.all_data[asset]['asks'].update({float(entry['price']): float(entry['size']) for entry in json_data['asks']})
 
 def process_price_change(asset, side, price_level, new_size):
-    if asset not in global_state.all_data:
-        return
-    if asset != global_state.all_data[asset]['asset_id']:
+    if asset_id != global_state.all_data[asset]['asset_id']:
         return  # skip updates for the No token to prevent duplicated updates
     if side == 'bids':
         book = global_state.all_data[asset]['bids']
@@ -35,25 +33,10 @@ def process_price_change(asset, side, price_level, new_size):
         book[price_level] = new_size
 
 def process_data(json_datas, trade=True):
-    # Ensure json_datas is a list
-    if not isinstance(json_datas, list):
-        json_datas = [json_datas]
 
     for json_data in json_datas:
-        # Add error handling for malformed data
-        if not isinstance(json_data, dict):
-            print(f"Warning: Received non-dict data: {type(json_data)}, value: {json_data}")
-            continue
-            
-        event_type = json_data.get('event_type')
-        if not event_type:
-            print(f"Warning: Missing event_type in data: {json_data}")
-            continue
-            
-        asset = json_data.get('market')
-        if not asset:
-            print(f"Warning: Missing market in data: {json_data}")
-            continue
+        event_type = json_data['event_type']
+        asset = json_data['market']
 
         if event_type == 'book':
             process_book_data(asset, json_data)
@@ -62,22 +45,11 @@ def process_data(json_datas, trade=True):
                 asyncio.create_task(perform_trade(asset))
                 
         elif event_type == 'price_change':
-            price_changes = json_data.get('price_changes', [])
-            if not isinstance(price_changes, list):
-                print(f"Warning: price_changes is not a list: {type(price_changes)}")
-                continue
-                
-            for data in price_changes:
-                if not isinstance(data, dict):
-                    continue
-                side = 'bids' if data.get('side') == 'BUY' else 'asks'
-                try:
-                    price_level = float(data.get('price', 0))
-                    new_size = float(data.get('size', 0))
-                    process_price_change(asset, side, price_level, new_size)
-                except (ValueError, TypeError) as e:
-                    print(f"Warning: Error processing price_change: {e}, data: {data}")
-                    continue
+            for data in json_data['price_changes']:
+                side = 'bids' if data['side'] == 'BUY' else 'asks'
+                price_level = float(data['price'])
+                new_size = float(data['size'])
+                process_price_change(asset, side, price_level, new_size)
 
                 if trade:
                     asyncio.create_task(perform_trade(asset))
@@ -178,4 +150,3 @@ def process_user_data(rows):
 
     else:
         print(f"User date received for {market} but its not in")
-
